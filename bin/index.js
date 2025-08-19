@@ -1,12 +1,18 @@
 #!/usr/bin/env node
-const inquirer = require("inquirer");
-const chalk = require("chalk");
-const fs = require("fs-extra");
-const path = require("path");
-const { execa } = require("execa");
-const { readFileSync } = require("fs");
+import inquirer from "inquirer";
+import chalk from "chalk";
+import fs from "fs-extra";
+import path from "path";
+import { execa } from "execa";
+import { readFileSync } from "fs"; 
+import { fileURLToPath } from "url"; 
 
-const packageJson = JSON.parse(readFileSync(path.join(__dirname, "../package.json"), "utf-8"));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const packageJson = JSON.parse(
+  readFileSync(path.join(__dirname, "../package.json"), "utf-8")
+);
 
 if (process.argv.includes("-v") || process.argv.includes("--version")) {
   console.log(`nestgen ${packageJson.version}`);
@@ -37,8 +43,9 @@ async function main() {
   console.log(chalk.blue("🚀 Welcome to NestJS + Prisma Project Generator!"));
 
   const { projectName } = await inquirer.prompt([
-    { type: "input", name: "projectName", message: "Enter your project name:" }
+    { type: "input", name: "projectName", message: "Enter your project name:" },
   ]);
+
   const dbSafeName = projectName.replace(/-/g, "_") + "_db";
   const projectPath = path.join(process.cwd(), projectName);
 
@@ -52,8 +59,8 @@ async function main() {
       type: "list",
       name: "database",
       message: "Select your database:",
-      choices: ["MySQL", "PostgreSQL", "SQLite", "MongoDB", "CockroachDB", "SQLServer"]
-    }
+      choices: ["PostgreSQL", "MySQL", "SQLite", "MongoDB", "CockroachDB", "SQLServer"],
+    },
   ]);
 
   console.log(chalk.green(`📦 Creating NestJS project "${projectName}"...`));
@@ -73,7 +80,7 @@ async function main() {
     "@nestjs/passport",
     "@aws-sdk/client-s3",
     "@aws-sdk/s3-request-presigner",
-    "moment"
+    "moment",
   ];
   await execa(pkgManager, ["install", ...coreDeps], { cwd: projectPath, stdio: "inherit" });
   console.log(chalk.green("✅ Core dependencies installed!"));
@@ -82,7 +89,7 @@ async function main() {
   await execa(pkgManager, ["install", "-D", "prisma"], { cwd: projectPath, stdio: "inherit" });
   console.log(chalk.green("✅ Prisma and @prisma/client installed!"));
 
-  const templatePath = path.resolve(__dirname, "./template");
+  const templatePath = path.resolve("./template");
   const projectPrismaPath = path.join(projectPath, "prisma/schema.prisma");
 
   const providerMap = {
@@ -91,7 +98,7 @@ async function main() {
     sqlite: "sqlite",
     mongodb: "mongodb",
     cockroachdb: "postgresql",
-    sqlserver: "sqlserver"
+    sqlserver: "sqlserver",
   };
   const selectedProvider = providerMap[database.toLowerCase()] || "mysql";
 
@@ -140,7 +147,7 @@ model User {
     sqlite: `file:./dev.db`,
     mongodb: `mongodb://localhost:27017/${dbSafeName}`,
     cockroachdb: `postgresql://root:password@localhost:26257/${dbSafeName}?sslmode=disable`,
-    sqlserver: `sqlserver://localhost:1433;database=${dbSafeName};user=sa;password=your_password;encrypt=false`
+    sqlserver: `sqlserver://localhost:1433;database=${dbSafeName};user=sa;password=your_password;encrypt=false`,
   };
 
   const envContent = `DATABASE_URL="${defaultUrlMap[database.toLowerCase()]}"
@@ -161,29 +168,24 @@ PORT=3000
 `;
 
   await fs.outputFile(path.join(projectPath, ".env"), envContent);
-  console.log(chalk.yellow("🎉 Project ready! Next steps:"));
+
+  console.log(chalk.yellow("🎉 Project ready!"));
+  console.log(chalk.green("✅ .env created! Please update DATABASE_URL if necessary before running Prisma commands."));
   console.log(chalk.cyan(`cd ${projectName}`));
-
-  console.log(chalk.green("✅ .env created! Please update DATABASE_URL if necessary before running seed."));
-
-  console.log(chalk.green("📦 Prisma installed!"));
-
   console.log(chalk.yellow("🔧 Next steps (run manually):"));
   console.log(chalk.cyan(`1. Generate Prisma Client:`));
   console.log(chalk.cyan(`   npx prisma generate`));
-
   console.log(chalk.cyan(`2. Apply Prisma Migrations:`));
   console.log(chalk.cyan(`   npx prisma migrate dev --name init`));
-
   console.log(chalk.cyan(`3. Run Seed Script:`));
   console.log(chalk.cyan(`   npx ts-node prisma/seed.ts`));
 
   console.log(chalk.yellow("⚠️ Make sure your .env DATABASE_URL is correct before running the above commands!"));
-  
+  console.log(chalk.cyan(`\nStart the development server:`));
   console.log(chalk.cyan(`${pkgManager} run start:dev`));
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(chalk.red("❌ Error:"), err);
   process.exit(1);
 });

@@ -61,8 +61,9 @@ Step 2 : ? Select your database: (Use arrow keys)
 Step 3 : 🎉 Project ready! Next steps:
             cd my-app
             Check .env
+            npx prisma generate
+            npx prisma migrate dev --name init
+            npx ts-node prisma/seed.ts
             npm run start:dev
-            npm run prisma:migrate
-            npm run seed
 
 ```

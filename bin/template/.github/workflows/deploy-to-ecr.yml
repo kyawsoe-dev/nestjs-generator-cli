@@ -1,0 +1,68 @@
+name: Build, Push to ECR, and Deploy to App Runner
+
+on:
+  push:
+    branches:
+      - dev-server
+      - staging-server
+      - prod-server
+
+env:
+  AWS_REGION: ap-southeast-1
+  ECR_REGISTRY: 339713129923.dkr.ecr.ap-southeast-1.amazonaws.com
+  ECR_REPOSITORY: freshmoe-hrms-api
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Determine image tag based on branch
+        id: vars
+        run: |
+          SHORT_SHA=${GITHUB_SHA::7}
+
+          case "${GITHUB_REF##*/}" in
+            dev-server)
+              BRANCH_TAG="dev"
+              ;;
+            staging-server)
+              BRANCH_TAG="staging"
+              ;;
+            prod-server)
+              BRANCH_TAG="prod"
+              ;;
+            *)
+              echo "Unsupported branch: ${GITHUB_REF##*/}"
+              exit 1
+              ;;
+          esac
+
+          echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_ENV
+          echo "BRANCH_TAG=${BRANCH_TAG}" >> $GITHUB_ENV
+
+      - name: Build, tag, and push Docker image to ECR
+        run: |
+          docker build --no-cache -t $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$SHORT_SHA
+
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$SHORT_SHA
+
+          echo "Docker images pushed:"
+          echo " - $ECR_REGISTRY/$ECR_REPOSITORY:$BRANCH_TAG"
+          echo " - $ECR_REGISTRY/$ECR_REPOSITORY:$SHORT_SHA"

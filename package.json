@@ -1,0 +1,37 @@
+{
+  "name": "nestjs-prisma-cli",
+  "version": "1.0.4",
+  "description": "A CLI to generate NestJS + Prisma project boilerplate with Swagger, Auth, and AWS S3 setup",
+  "main": "bin/index.js",
+  "type": "module",
+  "files": [
+    "bin/",
+    "template/"
+  ],
+  "bin": {
+    "nestgen": "./bin/index.cjs"
+  },
+  "scripts": {
+    "start": "node ./bin/index.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "nestjs",
+    "nestjs-generator",
+    "nestjs-prisma",
+    "nestjs-swagger",
+    "cli"
+  ],
+  "author": "Kyaw Soe",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "execa": "^9.6.0",
+    "fs-extra": "^11.3.1",
+    "inquirer": "^8.2.7",
+    "path": "^0.12.7"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

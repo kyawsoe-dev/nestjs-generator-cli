@@ -4,8 +4,8 @@ import chalk from "chalk";
 import fs from "fs-extra";
 import path from "path";
 import { execa } from "execa";
-import { readFileSync } from "fs"; 
-import { fileURLToPath } from "url"; 
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,9 +64,12 @@ async function main() {
   ]);
 
   console.log(chalk.green(`📦 Creating NestJS project "${projectName}"...`));
-  await execa("npx", ["@nestjs/cli", "new", projectName, "--skip-install"], { stdio: "inherit" });
+  await execa("npx", ["@nestjs/cli", "new", projectName, "--skip-install"], {
+    stdio: "inherit",
+  });
 
   const pkgManager = detectPackageManager();
+
   const coreDeps = [
     "argon2",
     "@nestjs/config",
@@ -83,14 +86,45 @@ async function main() {
     "moment",
   ];
   await execa(pkgManager, ["install", ...coreDeps], { cwd: projectPath, stdio: "inherit" });
-  console.log(chalk.green("✅ Core dependencies installed!"));
 
   await execa(pkgManager, ["install", "@prisma/client"], { cwd: projectPath, stdio: "inherit" });
   await execa(pkgManager, ["install", "-D", "prisma"], { cwd: projectPath, stdio: "inherit" });
-  console.log(chalk.green("✅ Prisma and @prisma/client installed!"));
 
-  const templatePath = path.resolve("./template");
+  console.log(chalk.green("✅ Dependencies installed!"));
+
+  const templatePath = path.resolve(__dirname, "../template");
   const projectPrismaPath = path.join(projectPath, "prisma/schema.prisma");
+
+  const extraItems = [
+    { src: path.resolve(__dirname, "../.github"), dest: path.join(projectPath, ".github") },
+    { src: path.resolve(__dirname, "../Dockerfile"), dest: path.join(projectPath, "Dockerfile") },
+  ];
+
+  async function safeCopy(src, dest, label) {
+    try {
+      if (await fs.pathExists(src)) {
+        await fs.copy(src, dest, { overwrite: true });
+        console.log(chalk.green(`✅ ${label} copied!`));
+      } else {
+        console.log(chalk.yellow(`⚠️ ${label} not found, skipped.`));
+      }
+    } catch (err) {
+      console.log(chalk.red(`❌ Failed to copy ${label}:`), err.message);
+    }
+  }
+
+  for (const item of extraItems) {
+    const label = path.basename(item.dest);
+    await safeCopy(item.src, item.dest, label);
+  }
+
+  if (await fs.pathExists(templatePath)) {
+    console.log(chalk.blue("📄 Copying template files..."));
+    await fs.copy(templatePath, projectPath, { overwrite: true });
+    console.log(chalk.green("✅ Template files copied!"));
+  } else {
+    console.log(chalk.yellow("⚠️ Template folder not found. Skipping copy."));
+  }
 
   const providerMap = {
     postgresql: "postgresql",
@@ -103,19 +137,14 @@ async function main() {
   const selectedProvider = providerMap[database.toLowerCase()] || "mysql";
 
   let prismaContent = "";
-  if (fs.existsSync(templatePath)) {
-    await fs.copy(templatePath, projectPath, { overwrite: true });
-    const templatePrismaPath = path.join(templatePath, "prisma/schema.prisma");
-    if (fs.existsSync(templatePrismaPath)) {
-      prismaContent = await fs.readFile(templatePrismaPath, "utf-8");
-      prismaContent = prismaContent.replace(
-        /datasource\s+db\s*{[^}]*provider\s*=\s*".*"/,
-        `datasource db {\n  provider = "${selectedProvider}"`
-      );
-    }
-  }
-
-  if (!prismaContent) {
+  const templatePrismaPath = path.join(templatePath, "prisma/schema.prisma");
+  if (fs.existsSync(templatePrismaPath)) {
+    prismaContent = await fs.readFile(templatePrismaPath, "utf-8");
+    prismaContent = prismaContent.replace(
+      /datasource\s+db\s*{[^}]*provider\s*=\s*".*"/,
+      `datasource db {\n  provider = "${selectedProvider}"`
+    );
+  } else {
     prismaContent = `generator client {
   provider = "prisma-client-js"
 }
@@ -172,6 +201,7 @@ PORT=3000
   console.log(chalk.yellow("🎉 Project ready!"));
   console.log(chalk.green("✅ .env created! Please update DATABASE_URL if necessary before running Prisma commands."));
   console.log(chalk.cyan(`cd ${projectName}`));
+
   console.log(chalk.yellow("🔧 Next steps (run manually):"));
   console.log(chalk.cyan(`1. Generate Prisma Client:`));
   console.log(chalk.cyan(`   npx prisma generate`));

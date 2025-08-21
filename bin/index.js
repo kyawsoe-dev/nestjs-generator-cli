@@ -39,6 +39,62 @@ const detectPackageManager = () => {
   }
 };
 
+export async function generatePrismaSchema(selectedProvider, templatePrismaPath) {
+  if (selectedProvider === "mongodb") {
+    return `generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique
+  name      String?
+  email     String
+  password  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("tbl_user")
+}
+`;
+  }
+
+  try {
+    let prismaContent = await fs.readFile(templatePrismaPath, "utf-8");
+    return prismaContent.replace(
+      /datasource\s+db\s*{[^}]*provider\s*=\s*".*"/,
+      `datasource db {\n  provider = "${selectedProvider}"`
+    );
+  } catch {
+    return `generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "${selectedProvider}"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  userId    String   @unique
+  name      String?
+  email     String
+  password  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("tbl_user")
+}
+`;
+  }
+}
+
 async function main() {
   console.log(chalk.blue("🚀 Welcome to NestJS + Prisma Project Generator!"));
 
@@ -94,36 +150,11 @@ async function main() {
 
   const templatePath = path.resolve(__dirname, "../template");
   const projectPrismaPath = path.join(projectPath, "prisma/schema.prisma");
-
-  const extraItems = [
-    { src: path.resolve(__dirname, "../.github"), dest: path.join(projectPath, ".github") },
-    { src: path.resolve(__dirname, "../Dockerfile"), dest: path.join(projectPath, "Dockerfile") },
-  ];
-
-  async function safeCopy(src, dest, label) {
-    try {
-      if (await fs.pathExists(src)) {
-        await fs.copy(src, dest, { overwrite: true });
-        console.log(chalk.green(`✅ ${label} copied!`));
-      } else {
-        console.log(chalk.yellow(`⚠️ ${label} not found, skipped.`));
-      }
-    } catch (err) {
-      console.log(chalk.red(`❌ Failed to copy ${label}:`), err.message);
-    }
-  }
-
-  for (const item of extraItems) {
-    const label = path.basename(item.dest);
-    await safeCopy(item.src, item.dest, label);
-  }
+  const templatePrismaPath = path.join(templatePath, "prisma/schema.prisma");
 
   if (await fs.pathExists(templatePath)) {
-    console.log(chalk.blue("📄 Copying template files..."));
     await fs.copy(templatePath, projectPath, { overwrite: true });
     console.log(chalk.green("✅ Template files copied!"));
-  } else {
-    console.log(chalk.yellow("⚠️ Template folder not found. Skipping copy."));
   }
 
   const providerMap = {
@@ -136,38 +167,7 @@ async function main() {
   };
   const selectedProvider = providerMap[database.toLowerCase()] || "mysql";
 
-  let prismaContent = "";
-  const templatePrismaPath = path.join(templatePath, "prisma/schema.prisma");
-  if (fs.existsSync(templatePrismaPath)) {
-    prismaContent = await fs.readFile(templatePrismaPath, "utf-8");
-    prismaContent = prismaContent.replace(
-      /datasource\s+db\s*{[^}]*provider\s*=\s*".*"/,
-      `datasource db {\n  provider = "${selectedProvider}"`
-    );
-  } else {
-    prismaContent = `generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "${selectedProvider}"
-  url      = env("DATABASE_URL")
-}
-
-model User {
-  id        Int      @id @default(autoincrement())
-  userId    String   @unique
-  name      String?
-  email     String
-  password  String
-  isActive  Boolean   @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  @@map("tbl_user")
-}
-`;
-  }
-
+  const prismaContent = await generatePrismaSchema(selectedProvider, templatePrismaPath);
   await fs.outputFile(projectPrismaPath, prismaContent);
 
   const defaultUrlMap = {
@@ -205,8 +205,13 @@ PORT=3000
   console.log(chalk.yellow("🔧 Next steps (run manually):"));
   console.log(chalk.cyan(`1. Generate Prisma Client:`));
   console.log(chalk.cyan(`   npx prisma generate`));
-  console.log(chalk.cyan(`2. Apply Prisma Migrations:`));
-  console.log(chalk.cyan(`   npx prisma migrate dev --name init`));
+  if (selectedProvider === "mongodb") {
+    console.log(chalk.cyan(`2. Push schema to MongoDB:`));
+    console.log(chalk.cyan(`   npx prisma db push`));
+  } else {
+    console.log(chalk.cyan(`2. Apply Prisma Migrations:`));
+    console.log(chalk.cyan(`   npx prisma migrate dev --name init`));
+  }
   console.log(chalk.cyan(`3. Run Seed Script:`));
   console.log(chalk.cyan(`   npx ts-node prisma/seed.ts`));
 

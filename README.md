@@ -58,15 +58,30 @@ Step 2: ? Select your database: (Use arrow keys)
         CockroachDB
         SQLServer
 Step 3: 🎉 Project ready! Next steps:
-        cd my-app
-        Check .env
+```
+
+### Navigate into your project
+```bash
+cd my-app
+```
+### Update .env
+```bash
+DATABASE_URL="your_database_connection_string"
 ```
 ```bash
 npx prisma generate
 ```
+### SQL Databases
+### (PostgreSQL, MySQL, SQLite, CockroachDB, SQLServer)
 ```bash
 npx prisma migrate dev --name init
 ```
+### NoSQL Database
+### (MongoDB)
+```bash
+npx prisma db push
+```
+### Then, follow this
 ```bash
 npx ts-node prisma/seed.ts
 ```

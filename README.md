@@ -21,49 +21,42 @@ Compatible with **Node.js >=18** and **NestJS v10+**.
 
 ## 📥 Installation
 
-## ⚡ Quick Start Guide
+### ⚡ Quick Start Guide
 
 Once the CLI is installed, you can use the following commands:
 
 ### 1️⃣ Install CLI globally
 
 ```bash
-
 npm install -g nestjs-prisma-cli
 
-```
 
 ### 2️⃣ Check CLI version
 
 ```bash
-
 nestgen -v
 # or
+```bash
 nestgen --version
 
-```
 
 ### 3️⃣ Generate a new project
-
 ```bash
-
 nestgen
 
-Step 1 : ? Enter your project name: my-app
+Step 1: ? Enter your project name: my-app
+Step 2: ? Select your database: (Use arrow keys)
+        MySQL
+        PostgreSQL
+        SQLite
+        MongoDB
+        CockroachDB
+        SQLServer
+Step 3: 🎉 Project ready! Next steps:
+        cd my-app
+        Check .env
+        npx prisma generate
+        npx prisma migrate dev --name init
+        npx ts-node prisma/seed.ts
+        npm run start:dev
 
-Step 2 : ? Select your database: (Use arrow keys)
-            MySQL
-            PostgreSQL
-            SQLite
-            MongoDB
-            CockroachDB
-            SQLServer
-Step 3 : 🎉 Project ready! Next steps:
-            cd my-app
-            Check .env
-            npx prisma generate
-            npx prisma migrate dev --name init
-            npx ts-node prisma/seed.ts
-            npm run start:dev
-
-```

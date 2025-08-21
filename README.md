@@ -48,7 +48,8 @@ nestgen --version
 nestgen
 ```
 
-Step 1: ? Enter your project name: my-app
+```text
+? Enter your project name: my-app
 Step 2: ? Select your database: (Use arrow keys)
         MySQL
         PostgreSQL
@@ -59,16 +60,17 @@ Step 2: ? Select your database: (Use arrow keys)
 Step 3: 🎉 Project ready! Next steps:
         cd my-app
         Check .env
-        ```bash
-        npx prisma generate
-        ```
-        ```bash
-        npx prisma migrate dev --name init
-        ```
-        ```bash
-        npx ts-node prisma/seed.ts
-        ```
-        ```bash
-        npm run start:dev
-        ```
+```
+```bash
+npx prisma generate
+```
+```bash
+npx prisma migrate dev --name init
+```
+```bash
+npx ts-node prisma/seed.ts
+```
+```bash
+npm run start:dev
+```
 

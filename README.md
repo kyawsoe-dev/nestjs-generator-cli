@@ -29,20 +29,24 @@ Once the CLI is installed, you can use the following commands:
 
 ```bash
 npm install -g nestjs-prisma-cli
+```
 
 
 ### 2️⃣ Check CLI version
 
 ```bash
 nestgen -v
+```
 # or
 ```bash
 nestgen --version
+```
 
 
 ### 3️⃣ Generate a new project
 ```bash
 nestgen
+```
 
 Step 1: ? Enter your project name: my-app
 Step 2: ? Select your database: (Use arrow keys)

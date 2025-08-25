@@ -6,16 +6,20 @@ const prisma = new PrismaClient();
 async function main() {
   const hashedPassword = await argon2.hash("Asdfasdf@123");
 
-  const user = await prisma.user.upsert({
+  const existing = await prisma.user.findUnique({
     where: { userId: "USER_20250815001" },
-    update: {},
-    create: {
-      userId: "USER_20250815001",
-      name: "Kyaw Soe",
-      email: "kyawsoe@gmail.com",
-      password: hashedPassword,
-    },
   });
+
+  if (!existing) {
+    await prisma.user.create({
+      data: {
+        userId: "USER_20250815001",
+        name: "Kyaw Soe",
+        email: "kyawsoe@gmail.com",
+        password: hashedPassword,
+      },
+    });
+  }
 
   console.log("Seeded Successfully.");
 }

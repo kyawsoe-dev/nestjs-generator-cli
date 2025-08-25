@@ -106,7 +106,7 @@ async function main() {
   const projectPath = path.join(process.cwd(), projectName);
 
   if (fs.existsSync(projectPath)) {
-    console.log(chalk.red(`❌ Folder "${projectName}" already exists!`));
+    console.log(chalk.red(`Folder "${projectName}" already exists!`));
     process.exit(1);
   }
 
@@ -221,6 +221,6 @@ PORT=3000
 }
 
 main().catch((err) => {
-  console.error(chalk.red("❌ Error:"), err);
+  console.error(chalk.red("Error:"), err);
   process.exit(1);
 });

@@ -15,6 +15,10 @@
     "start": "node ./bin/index.js",
     "test": "echo \"No tests specified\" && exit 0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kyawsoe-dev/nestjs-generator-cli.git"
+  },
   "keywords": [
     "nestjs",
     "nestjs-generator",
@@ -24,6 +28,7 @@
   ],
   "author": "Kyaw Soe",
   "license": "MIT",
+  "homepage": "https://github.com/kyawsoe-dev/nestjs-generator-cli/blob/main/README.md",
   "dependencies": {
     "chalk": "^4.1.2",
     "execa": "^9.6.0",

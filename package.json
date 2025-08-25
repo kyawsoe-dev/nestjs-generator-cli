@@ -1,6 +1,6 @@
 {
   "name": "nestjs-prisma-cli",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "A CLI to generate NestJS + Prisma project boilerplate with Swagger, Auth, and AWS S3 setup",
   "type": "module",
   "main": "bin/index.js",

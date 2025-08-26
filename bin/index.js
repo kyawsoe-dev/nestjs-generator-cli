@@ -56,42 +56,42 @@ model User {
   name      String?
   email     String
   password  String
+  profileUrl String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@map("tbl_user")
+}
+
+model Log {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  method      String
+  path        String
+  statusCode  Int
+  messageCode String?
+  message     String?
+  headers     Json
+  body        Json?
+  query       Json?
+  duration    Int
+  createdAt   DateTime @default(now())
+
+  @@map("tbl_log")
 }
 `;
   }
 
   try {
     let prismaContent = await fs.readFile(templatePrismaPath, "utf-8");
-    return prismaContent.replace(
-      /datasource\s+db\s*{[^}]*provider\s*=\s*".*"/,
-      `datasource db {\n  provider = "${selectedProvider}"`
+
+    prismaContent = prismaContent.replace(
+      /(datasource\s+db\s*{[^}]*provider\s*=\s*")\w+(")/,
+      `$1${selectedProvider}$2`
     );
-  } catch {
-    return `generator client {
-  provider = "prisma-client-js"
-}
 
-datasource db {
-  provider = "${selectedProvider}"
-  url      = env("DATABASE_URL")
-}
-
-model User {
-  id        Int      @id @default(autoincrement())
-  userId    String   @unique
-  name      String?
-  email     String
-  password  String
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  @@map("tbl_user")
-}
-`;
+    return prismaContent;
+  } catch (err) {
+    throw new Error(`Failed to read Prisma template: ${err.message}`);
   }
 }
 
@@ -141,12 +141,27 @@ async function main() {
     "@aws-sdk/s3-request-presigner",
     "moment",
   ];
-  await execa(pkgManager, ["install", ...coreDeps], { cwd: projectPath, stdio: "inherit" });
 
-  await execa(pkgManager, ["install", "@prisma/client"], { cwd: projectPath, stdio: "inherit" });
-  await execa(pkgManager, ["install", "-D", "prisma"], { cwd: projectPath, stdio: "inherit" });
+  const devDeps = [
+    "prisma",
+    "@types/multer",
+  ];
+  
 
-  console.log(chalk.green("✅ Dependencies installed!"));
+  await execa(pkgManager, ["install", ...coreDeps], {
+    cwd: projectPath,
+    stdio: "inherit",
+  });
+
+  await execa(pkgManager, ["install", "@prisma/client"], {
+    cwd: projectPath,
+    stdio: "inherit",
+  });
+
+  await execa(pkgManager, ["install", "-D", ...devDeps], {
+    cwd: projectPath,
+    stdio: "inherit",
+  });
 
   const templatePath = path.resolve(__dirname, "../template");
   const projectPrismaPath = path.join(projectPath, "prisma/schema.prisma");
@@ -154,7 +169,6 @@ async function main() {
 
   if (await fs.pathExists(templatePath)) {
     await fs.copy(templatePath, projectPath, { overwrite: true });
-    console.log(chalk.green("✅ Template files copied!"));
   }
 
   const providerMap = {
@@ -199,10 +213,9 @@ PORT=3000
   await fs.outputFile(path.join(projectPath, ".env"), envContent);
 
   console.log(chalk.yellow("🎉 Project ready!"));
-  console.log(chalk.green("✅ .env created! Please update DATABASE_URL if necessary before running Prisma commands."));
-  console.log(chalk.cyan(`cd ${projectName}`));
+  console.log(chalk.green("✅ Congratulations! Your project has been created successfully."));
+  console.log(chalk.cyan(`👉 Next steps: cd ${projectName}`));
 
-  console.log(chalk.yellow("🔧 Next steps (run manually):"));
   console.log(chalk.cyan(`1. Generate Prisma Client:`));
   console.log(chalk.cyan(`   npx prisma generate`));
   if (selectedProvider === "mongodb") {

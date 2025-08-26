@@ -1,31 +1,31 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../../prisma/prisma.service';
-import * as argon2 from 'argon2';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { PrismaService } from "../../prisma/prisma.service";
+import * as argon2 from "argon2";
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly jwtService: JwtService,
+    private readonly jwtService: JwtService
   ) {}
 
   async validateUser(userId: string, password: string) {
-    const modifiedUserId = userId?.replace(/\s+/g, '');
+    const modifiedUserId = userId?.replace(/\s+/g, "");
 
     const user = await this.prisma.user.findUnique({
       where: { userId: modifiedUserId },
     });
 
     if (!user || !(await argon2.verify(user.password, password))) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     return user;
   }
 
   async login(user: {
-    id: number;
+    id: string | number;
     userId: string;
     name?: string | null;
     email: string;
@@ -47,7 +47,7 @@ export class AuthService {
     return {
       id: user.id,
       userId: user.userId,
-      name: user.name, // now accepts null
+      name: user.name,
       email: user.email,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,

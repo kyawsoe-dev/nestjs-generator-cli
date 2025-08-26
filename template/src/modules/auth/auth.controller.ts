@@ -36,6 +36,17 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
+  @ApiBody({
+    description: 'Provide your userId and refreshToken',
+    schema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string', example: 'USER_20250815001' },
+        refreshToken: { type: 'string', example: 'xxxx.yyyy.zzzz' },
+      },
+      required: ['userId', 'refreshToken'],
+    },
+  })
   async refresh(@Body() body: { userId: string; refreshToken: string }) {
     if (!body || !body.userId || !body.refreshToken) {
       throw new UnauthorizedException('Missing login credentials');
@@ -82,6 +93,16 @@ export class AuthController {
   @Public()
   @Post('validate')
   @HttpCode(200)
+  @ApiBody({
+    description: 'Provide the access token to validate',
+    schema: {
+      type: 'object',
+      properties: {
+        token: { type: 'string', example: 'xxxx.yyyy.zzzz' },
+      },
+      required: ['token'],
+    },
+  })
   async validate(@Body() body: { token: string }) {
     try {
       const payload = this.jwtService.verify(body.token, {

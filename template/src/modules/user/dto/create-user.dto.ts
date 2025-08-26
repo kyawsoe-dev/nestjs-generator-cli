@@ -15,7 +15,14 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'StrongPassword@123' })
+  @ApiProperty({ example: 'Asdfasdf@123' })
   @IsString()
   password: string;
+
+  @ApiProperty({
+    example: 'projectName/dev/profiles/2025-08-26/filename-123456.png',
+    required: false,
+  })
+  @IsOptional()
+  profileUrl?: string;
 }

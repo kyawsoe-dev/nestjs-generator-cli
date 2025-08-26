@@ -1,20 +1,37 @@
 generator client {
-    provider = "prisma-client-js"
-  }
+  provider = "prisma-client-js"
+}
 
-  datasource db {
-    provider = "mysql"
-    url      = env("DATABASE_URL")
-  }
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
 
-  model User {
-    id        Int      @id @default(autoincrement())
-    userId    String   @unique
-    name      String?
-    email     String
-    password  String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    @@map("tbl_user")
-  }
-  
+model User {
+  id         Int      @id @default(autoincrement())
+  userId     String   @unique
+  name       String?
+  email      String
+  password   String
+  profileUrl String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("tbl_user")
+}
+
+model Log {
+  id          Int      @id @default(autoincrement())
+  method      String
+  path        String
+  statusCode  Int
+  messageCode String?
+  message     String?
+  headers     Json
+  body        Json?
+  query       Json?
+  duration    Int
+  createdAt   DateTime @default(now())
+
+  @@map("tbl_log")
+}

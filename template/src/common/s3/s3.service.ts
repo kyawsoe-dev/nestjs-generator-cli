@@ -9,7 +9,6 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import * as moment from 'moment';
-import Base64File from '../classes/base64';
 
 @Injectable()
 export class S3Service {
@@ -47,36 +46,22 @@ export class S3Service {
     });
   }
 
-  async uploadBase64Image(file: Base64File, filePath: string): Promise<string> {
-    const base64Data = file.content.replace(/^data:[\w\/\-\.]+;base64,/, '');
-    const buffer = Buffer.from(base64Data, 'base64');
-    const extension = file.name.substring(file.name.lastIndexOf('.'));
+  async uploadFile(
+    file: Express.Multer.File,
+    filePath: string,
+  ): Promise<string> {
+    const extension = file.originalname.substring(
+      file.originalname.lastIndexOf('.'),
+    );
     const timestamp = moment().valueOf();
-    const filename = file.name.replace(/\.[^/.]+$/, '');
+    const filename = file.originalname.replace(/\.[^/.]+$/, '');
     const date = moment().format('YYYY-MM-DD');
 
     const key = `${this.projectName}/${this.environment}/${filePath}${date}/${filename}-${timestamp}${extension}`;
 
-    await this.uploadToS3(buffer, file.mimeType, key);
+    await this.uploadToS3(file.buffer, file.mimetype, key);
     return key;
   }
-
-  // async uploadFile(
-  //   file: Express.Multer.File,
-  //   filePath: string,
-  // ): Promise<string> {
-  //   const extension = file.originalname.substring(
-  //     file.originalname.lastIndexOf('.'),
-  //   );
-  //   const timestamp = moment().valueOf();
-  //   const filename = file.originalname.replace(/\.[^/.]+$/, '');
-  //   const date = moment().format('YYYY-MM-DD');
-
-  //   const key = `${this.projectName}/${this.environment}/${filePath}${date}/${filename}-${timestamp}${extension}`;
-
-  //   await this.uploadToS3(file.buffer, file.mimetype, key);
-  //   return key;
-  // }
 
   private async uploadToS3(
     buffer: Buffer,

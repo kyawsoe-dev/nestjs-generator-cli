@@ -5,10 +5,22 @@ export class PaginatedResponseDto<T> {
   total: number;
 
   @ApiProperty()
-  page: number;
+  limit: number;
 
   @ApiProperty()
-  limit: number;
+  currentPage: number;
+
+  @ApiProperty()
+  firstPage: number;
+
+  @ApiProperty()
+  lastPage: number;
+
+  @ApiProperty()
+  nextPage: number | null;
+
+  @ApiProperty()
+  previousPage: number | null;
 
   @ApiProperty({ isArray: true })
   data: T[];

@@ -2,131 +2,165 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import * as argon2 from 'argon2';
-import { PrismaService } from '../../prisma/prisma.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { PaginationDto } from 'src/common/dto';
-import { Paginate } from 'src/common/utils/pagination.util';
-import { User } from '@prisma/client';
+} from "@nestjs/common";
+import * as argon2 from "argon2";
+import { PrismaService } from "../../prisma/prisma.service";
+import { S3Service } from "src/common/s3/s3.service";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { PaginatedResponseDto, PaginationDto } from "src/common/dto";
+import { Paginate } from "src/common/utils/pagination.util";
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private s3Service: S3Service) {}
 
-  async create(dto: CreateUserDto) {
-    if (!dto.userId) throw new BadRequestException('userId is required');
-    if (!dto.email) throw new BadRequestException('email is required');
-    if (!dto.password) throw new BadRequestException('password is required');
-
+  async create(dto: CreateUserDto, file?: Express.Multer.File) {
     const hashedPassword = await argon2.hash(dto.password);
+    let profileUrl = dto.profileUrl ?? null;
 
-    try {
-      return await this.prisma.user.create({
-        data: {
-          userId: dto.userId,
-          name: dto.name ?? null,
-          email: dto.email,
-          password: hashedPassword,
-        },
-      });
-    } catch (error) {
-      throw new BadRequestException('Failed to create user: ' + error.message);
-    }
+    if (file) profileUrl = await this.s3Service.uploadFile(file, "profiles/");
+
+    const user = await this.prisma.user.create({
+      data: {
+        userId: dto.userId,
+        name: dto.name ?? null,
+        email: dto.email,
+        password: hashedPassword,
+        profileUrl,
+      },
+    });
+
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 
-  async findAll(query: PaginationDto) {
-    const { page = 1, limit = 10, search, all } = query;
-    const where = search
+  async findAll(query: PaginationDto): Promise<PaginatedResponseDto<any>> {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      all,
+      sortBy = "id",
+      sortOrder = "desc",
+    } = query;
+
+    const where: any = search
       ? {
-          OR: [{ name: { contains: search } }, { email: { contains: search } }],
+          OR: [
+            { userId: { contains: search } },
+            { name: { contains: search } },
+            { email: { contains: search } },
+          ],
         }
       : {};
 
-    try {
-      if (all === 'true') {
-        const users = await this.prisma.user.findMany({
-          where,
-          orderBy: { id: 'asc' },
-        });
+    const orderBy: any = {};
+    orderBy[sortBy] = sortOrder;
 
-        return {
-          user_list: users.map((u) => ({
-            id: u.id,
-            userId: u.userId,
-            name: u.name,
-            email: u.email,
-          })),
-        };
-      }
+    if (all === "true") {
+      const data = await this.prisma.user.findMany({ where, orderBy });
+      const total = data.length;
 
-      const result = await Paginate<User>(this.prisma.user, {
-        where,
-        page,
-        limit,
-        orderBy: { id: 'asc' },
-      });
-
-      return {
-        total: result.total,
-        page: result.page,
-        limit: result.limit,
-        user_list: result.data.map((u) => ({
+      const dataWithUrls = await Promise.all(
+        data.map(async (u) => ({
           id: u.id,
           userId: u.userId,
           name: u.name,
           email: u.email,
-        })),
+          profileUrl: u.profileUrl
+            ? await this.s3Service.getSignedUrl(u.profileUrl)
+            : null,
+        }))
+      );
+
+      return {
+        total,
+        limit: total,
+        currentPage: 1,
+        firstPage: 1,
+        lastPage: 1,
+        nextPage: null,
+        previousPage: null,
+        data: dataWithUrls,
       };
-    } catch (error) {
-      throw new BadRequestException('Failed to fetch users: ' + error.message);
     }
+
+    const paginated = await Paginate(this.prisma.user, {
+      where,
+      page,
+      limit,
+      orderBy,
+    });
+
+    paginated.data = await Promise.all(
+      paginated.data.map(async (u: any) => ({
+        id: u.id,
+        userId: u.userId,
+        name: u.name,
+        email: u.email,
+        profileUrl: u.profileUrl
+          ? await this.s3Service.getSignedUrl(u.profileUrl)
+          : null,
+      }))
+    );
+
+    return paginated;
   }
 
-  async findOne(id: number) {
-    try {
-      const user = await this.prisma.user.findUnique({ where: { id } });
-      if (!user) throw new NotFoundException('User not found');
-      return user;
-    } catch (error) {
-      throw new BadRequestException('Failed to fetch user: ' + error.message);
-    }
+  async findOne(id: string | number) {
+    const user = await this.prisma.user.findUnique({ where: { id } as any });
+    if (!user) throw new NotFoundException("User not found");
+
+    const { password, profileUrl: storedProfileUrl, ...userData } = user;
+    const profileUrl = storedProfileUrl
+      ? await this.s3Service.getSignedUrl(storedProfileUrl)
+      : null;
+
+    return { ...userData, profileUrl };
   }
 
-  async update(id: number, dto: UpdateUserDto) {
-    const existing = await this.prisma.user.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('User not found');
+  async update(
+    id: string | number,
+    dto: UpdateUserDto,
+    file?: Express.Multer.File
+  ) {
+    const existing = await this.prisma.user.findUnique({
+      where: { id } as any,
+    });
+    if (!existing) throw new NotFoundException("User not found");
 
-    if (dto.password) {
-      dto.password = await argon2.hash(dto.password);
+    const updatedPassword = dto.password
+      ? await argon2.hash(dto.password)
+      : existing.password;
+
+    let profileUrl = existing.profileUrl;
+    if (file) {
+      if (existing.profileUrl) await this.s3Service.remove(existing.profileUrl);
+      profileUrl = await this.s3Service.uploadFile(file, "profiles/");
     }
 
-    const data: any = {
-      name: dto.name ?? existing.name,
-      email: dto.email ?? existing.email,
-    };
+    const updatedUser = await this.prisma.user.update({
+      where: { id } as any,
+      data: {
+        name: dto.name ?? existing.name,
+        email: dto.email ?? existing.email,
+        password: updatedPassword,
+        profileUrl,
+      },
+    });
 
-    if (dto.password) data.password = dto.password;
-
-    try {
-      return await this.prisma.user.update({
-        where: { id },
-        data,
-      });
-    } catch (error) {
-      throw new BadRequestException('Failed to update user: ' + error.message);
-    }
+    const { password, ...userWithoutPassword } = updatedUser;
+    return userWithoutPassword;
   }
 
-  async remove(id: number) {
-    try {
-      const existing = await this.prisma.user.findUnique({ where: { id } });
-      if (!existing) throw new NotFoundException('User not found');
+  async remove(id: string | number) {
+    const existing = await this.prisma.user.findUnique({
+      where: { id } as any,
+    });
+    if (!existing) throw new NotFoundException("User not found");
 
-      return await this.prisma.user.delete({ where: { id } });
-    } catch (error) {
-      throw new BadRequestException('Failed to delete user: ' + error.message);
-    }
+    await this.prisma.user.delete({ where: { id } as any });
+    return { deleted: true };
   }
 }

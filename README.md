@@ -14,6 +14,7 @@ A CLI tool to quickly scaffold a **NestJS + Prisma** project with built-in suppo
 - 📖 Swagger (OpenAPI) setup
 - 🔑 Authentication boilerplate
 - ☁️ AWS S3 integration
+- 📜 Logging via Winston (rotating logs and DB persistence)
 
 Compatible with **Node.js >=18** and **NestJS v10+**.
 
@@ -31,19 +32,20 @@ Once the CLI is installed, you can use the following commands:
 npm install -g nestjs-prisma-cli
 ```
 
-
 ### 2️⃣ Check CLI version
 
 ```bash
 nestgen -v
 ```
+
 # or
+
 ```bash
 nestgen --version
 ```
 
-
 ### 3️⃣ Generate a new project
+
 ```bash
 nestgen
 ```
@@ -61,31 +63,43 @@ Step 3: 🎉 Project ready! Next steps:
 ```
 
 ### Navigate into your project
+
 ```bash
 cd my-app
 ```
+
 ### Update .env
+
 ```bash
 DATABASE_URL="your_database_connection_string"
 ```
+
 ```bash
 npx prisma generate
 ```
+
 ### SQL Databases
+
 ### (PostgreSQL, MySQL, SQLite, CockroachDB, SQLServer)
+
 ```bash
 npx prisma migrate dev --name init
 ```
+
 ### NoSQL Database
+
 ### (MongoDB)
+
 ```bash
 npx prisma db push
 ```
+
 ### Then, follow this
+
 ```bash
 npx ts-node prisma/seed.ts
 ```
+
 ```bash
 npm run start:dev
 ```
-

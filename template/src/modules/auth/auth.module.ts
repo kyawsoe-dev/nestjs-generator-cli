@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt/jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
@@ -11,12 +11,21 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_ACCESS_SECRET'),
-        signOptions: {
-          expiresIn: configService.get<string>('JWT_ACCESS_EXPIRATION_TIME'),
-        },
-      }),
+      useFactory: async (configService: ConfigService): Promise<JwtModuleOptions> => {
+        const secret = configService.get<string>('JWT_ACCESS_SECRET');
+        const expiresIn = configService.get<string>('JWT_ACCESS_EXPIRATION_TIME');
+
+        if (!secret || !expiresIn) {
+          throw new Error('Missing JWT environment variables');
+        }
+
+        return {
+          secret,
+          signOptions: {
+            expiresIn: expiresIn as any, 
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController],

@@ -1,4 +1,4 @@
-# 🚀 NestJS + Prisma Project Generator
+# NestJS + Prisma Project Generator
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](#license)
 
@@ -6,23 +6,23 @@ A CLI tool to quickly scaffold a **NestJS + Prisma** project with pre-configured
 
 ---
 
-## 📦 NestJS Prisma Generator CLI
+## NestJS Prisma Generator CLI
 
 A CLI tool to quickly scaffold a **NestJS + Prisma** project with built-in support for:
 
-- 🔧 Prisma ORM with migrations and seeding
-- 📖 Swagger (OpenAPI) setup
-- 🔑 Authentication boilerplate
-- ☁️ AWS S3 integration
-- 📜 Logging via Winston (rotating logs and DB persistence)
+- Prisma ORM with migrations and seeding
+- Swagger (OpenAPI) setup
+- Authentication boilerplate
+- AWS S3 integration
+- Logging via Winston (rotating logs and DB persistence)
 
 Compatible with **Node.js >=18** and **NestJS v10+**.
 
 ---
 
-## 📥 Installation
+## Installation
 
-### ⚡ Quick Start Guide
+### Quick Start Guide
 
 Once the CLI is installed, you can use the following commands:
 

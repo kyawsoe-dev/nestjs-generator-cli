@@ -10,7 +10,7 @@ on:
 env:
   AWS_REGION: ap-southeast-1
   ECR_REGISTRY: 339713129923.dkr.ecr.ap-southeast-1.amazonaws.com
-  ECR_REPOSITORY: freshmoe-hrms-api
+  ECR_REPOSITORY: ecr-repository-name
 
 jobs:
   deploy:
